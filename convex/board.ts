@@ -82,3 +82,77 @@ export const update = mutation({
     return board;
   },
 });
+
+export const favorite = mutation({
+  args: { id: v.id("boards"), orgId: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Sem autorização");
+    }
+
+    const board = await ctx.db.get(args.id);
+
+    if (!board) {
+      throw new Error("Quadro não encontrado");
+    }
+
+    const userId = identity.subject;
+
+    const existingFavorite = await ctx.db
+      .query("userFavorites")
+      .withIndex("by_user_board_org", (q) =>
+        q.eq("userId", userId).eq("boardId", board._id).eq("orgId", args.orgId)
+      )
+      .unique();
+
+    if (existingFavorite) {
+      throw new Error("Quadro já favoritado antes");
+    }
+
+    await ctx.db.insert("userFavorites", {
+      userId,
+      boardId: board._id,
+      orgId: args.orgId,
+    });
+
+    return board;
+  },
+});
+
+export const unfavorite = mutation({
+  args: { id: v.id("boards"), orgId: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Sem autorização");
+    }
+
+    const board = await ctx.db.get(args.id);
+
+    if (!board) {
+      throw new Error("Quadro não encontrado");
+    }
+
+    const userId = identity.subject;
+
+    const existingFavorite = await ctx.db
+      .query("userFavorites")
+      .withIndex(
+        "by_user_board",
+        (q) => q.eq("userId", userId).eq("boardId", board._id)
+        // TODO: check if orgId needed
+      )
+      .unique();
+
+    if (!existingFavorite) {
+      throw new Error("Quadro favorito não encontrado");
+    }
+
+    await ctx.db.delete(existingFavorite._id);
+
+    return board;
+  },
+});
