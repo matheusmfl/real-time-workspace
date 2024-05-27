@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 import { useApiMutation } from "@/hooks/use-api-mutations";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export function NewBoardButton({
   orgId,
@@ -15,6 +16,7 @@ export function NewBoardButton({
   disabled?: boolean;
 }) {
   const { mutate, pending } = useApiMutation(api.board.create);
+  const router = useRouter();
 
   const onClick = () => {
     mutate({
@@ -23,7 +25,7 @@ export function NewBoardButton({
     })
       .then((id) => {
         toast.success("Quadro criado com sucesso!");
-        // TODO: Redirect to /board/${id}
+        router.push(`/board/${id}`);
       })
       .catch(() => toast.error("Putz, algo deu errado!"));
   };
